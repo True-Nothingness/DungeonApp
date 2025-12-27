@@ -1,5 +1,6 @@
 package com.light.dungeonofhabits.api
 
+import android.content.Context
 import com.google.gson.GsonBuilder
 import com.light.dungeonofhabits.models.BattleResponse
 import com.light.dungeonofhabits.models.CharacterResponse
@@ -16,6 +17,8 @@ import com.light.dungeonofhabits.models.TaskRequest
 import com.light.dungeonofhabits.models.TaskResponse
 import com.light.dungeonofhabits.models.ToggleTaskResponse
 import com.light.dungeonofhabits.models.User
+import com.light.dungeonofhabits.utils.SecurePrefs
+import okhttp3.CertificatePinner
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Call
@@ -92,11 +95,13 @@ interface APIService {
 
 }
 object ApiClient {
-    private var tokenProvider: (() -> String?)? = null
     private var retrofit: Retrofit? = null
 
-    fun init(provider: () -> String?) {
-        tokenProvider = provider
+    fun init(context: Context) {
+        val hostname = "truenothingness.id.vn"
+        val certificatePinner = CertificatePinner.Builder()
+            .add(hostname, "sha256/Qm16xcp7BY8/CSm9aRy/QzaQPWNyjBijZklYlx4B7PQ=")
+            .build()
 
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
@@ -104,7 +109,18 @@ object ApiClient {
 
         val client = OkHttpClient.Builder()
             .addInterceptor(logging)
-            .addInterceptor(AuthInterceptor(provider))
+            .addInterceptor { chain ->
+                val token = SecurePrefs.getToken(context)
+                val request = if (token != null) {
+                    chain.request().newBuilder()
+                        .addHeader("Authorization", "Bearer $token")
+                        .build()
+                } else {
+                    chain.request()
+                }
+                chain.proceed(request)
+            }
+            .certificatePinner(certificatePinner)
             .connectTimeout(60, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
@@ -115,7 +131,7 @@ object ApiClient {
             .create()
 
         retrofit = Retrofit.Builder()
-            .baseUrl("https://truenothingness.id.vn/")
+            .baseUrl("https://$hostname/")
             .addConverterFactory(GsonConverterFactory.create(gson))
             .client(client)
             .build()

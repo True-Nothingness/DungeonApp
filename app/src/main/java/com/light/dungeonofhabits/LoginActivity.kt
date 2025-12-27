@@ -1,7 +1,6 @@
 package com.light.dungeonofhabits
 
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.widget.TextView
 import android.widget.Toast
@@ -15,15 +14,12 @@ import com.light.dungeonofhabits.models.LoginResponse
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import androidx.core.content.edit
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
-import com.light.dungeonofhabits.models.Profile
-import com.light.dungeonofhabits.models.User
+import com.light.dungeonofhabits.utils.SecurePrefs
 import org.json.JSONObject
 
 class LoginActivity : AppCompatActivity() {
-    private lateinit var sharedPreferences: SharedPreferences
     private lateinit var usernameET: TextInputEditText
     private lateinit var passwordET: TextInputEditText
     private lateinit var loginButton: MaterialButton
@@ -34,7 +30,6 @@ class LoginActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_login)
-        sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
@@ -69,10 +64,9 @@ class LoginActivity : AppCompatActivity() {
                     val token = loginResponse?.token
 
                     if (token != null) {
-                        // Save token to SharedPreferences
-                        sharedPreferences.edit(commit = true) { putString("jwt_token", token) }
-                        ApiClient.init { token }
+                        SecurePrefs.saveToken(this@LoginActivity, token)
                         startActivity(Intent(this@LoginActivity, MainActivity::class.java))
+                        finish() // Finish LoginActivity so user can't go back
                     } else {
                         Toast.makeText(this@LoginActivity, "Login failed: token missing", Toast.LENGTH_SHORT).show()
                     }
@@ -92,5 +86,4 @@ class LoginActivity : AppCompatActivity() {
             }
         })
     }
-
 }

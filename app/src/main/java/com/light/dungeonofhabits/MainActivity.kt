@@ -16,6 +16,7 @@ import androidx.core.view.GravityCompat
 import com.light.dungeonofhabits.databinding.ActivityMainBinding
 import com.light.dungeonofhabits.models.Profile
 import com.light.dungeonofhabits.utils.Constants
+import com.light.dungeonofhabits.utils.SecurePrefs
 import java.time.LocalDate
 
 class MainActivity : AppCompatActivity() {
@@ -177,6 +178,7 @@ class MainActivity : AppCompatActivity() {
     private fun logoutUser(context: Context) {
         val prefs = context.getSharedPreferences(Constants.USER_PREFS, MODE_PRIVATE)
         prefs.edit { clear() }
+        SecurePrefs.clear(context)
         val intent = Intent(this, LoginActivity::class.java)
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)
